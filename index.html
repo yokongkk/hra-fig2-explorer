@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HRA KG Figure 2 · Mermaid Explorer</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #182230;
+      --muted: #5d6878;
+      --line: #d9dee7;
+      --paper: #ffffff;
+      --wash: #f5f7fa;
+      --accent: #225ea8;
+      --accent-soft: #e8f1fb;
+      --focus: #b45309;
+      --green: #d9eed2;
+      --orange: #fde4bb;
+      --coral: #ffd1c8;
+      --purple: #e3c7e8;
+      --cyan: #c7eff1;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--wash);
+      font: 15px/1.55 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    a { color: var(--accent); }
+    button { font: inherit; }
+    .page { width: min(1180px, calc(100% - 32px)); margin: 28px auto 56px; }
+    header { margin-bottom: 18px; }
+    h1, h2, p { margin-top: 0; }
+    h1 { margin-bottom: 7px; font-size: clamp(24px, 3vw, 38px); line-height: 1.16; }
+    h2 { margin-bottom: 12px; font-size: 20px; }
+    .lede { max-width: 860px; color: var(--muted); margin-bottom: 0; }
+    .panel {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: clamp(14px, 2.2vw, 24px);
+      box-shadow: 0 10px 30px rgb(20 31 49 / 7%);
+    }
+    .overview-head, .detail-head {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .hint { margin: 0; color: var(--muted); }
+    .metagraph-wrap {
+      position: relative;
+      width: min(100%, 1028px);
+      margin: 18px auto 0;
+      line-height: 0;
+    }
+    .metagraph-wrap img { display: block; width: 100%; height: auto; border: 1px solid var(--line); }
+    .hotspot {
+      position: absolute;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      cursor: pointer;
+      padding: 0;
+    }
+    .hotspot:hover, .hotspot:focus-visible {
+      border-color: var(--focus);
+      background: rgb(255 255 255 / 16%);
+      outline: 2px solid rgb(180 83 9 / 24%);
+      outline-offset: 1px;
+    }
+    .hotspot.is-active { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(34 94 168 / 20%); }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .swatch { width: 12px; height: 12px; border-radius: 2px; border: 1px solid rgb(0 0 0 / 8%); }
+    .detail { margin-top: 20px; }
+    .placeholder { text-align: center; color: var(--muted); padding: 36px 18px; }
+    .selection-kicker { color: var(--muted); font-size: 13px; margin-bottom: 2px; }
+    .selection-title { margin: 0; font-size: 24px; }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .diagram-frame {
+      margin-top: 16px;
+      min-height: 180px;
+      padding: 12px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+    .diagram-frame img { display: block; width: max-content; min-width: 100%; max-width: none; height: auto; margin: 0 auto; }
+    .dictionary { margin-top: 24px; }
+    .dictionary-bar { display: flex; align-items: end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .dictionary-group { margin-top: 22px; }
+    .dictionary-group + .dictionary-group { padding-top: 22px; border-top: 2px solid var(--line); }
+    .dictionary-group h3 { margin: 0 0 4px; font-size: 18px; }
+    .dictionary-group .object-summary { margin: 0; color: var(--muted); font-size: 13px; }
+    .table-wrap { margin-top: 12px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: var(--paper); }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { color: var(--muted); font-size: 13px; font-weight: 650; background: var(--wash); }
+    td code { white-space: nowrap; color: #7c2d12; }
+    .kind { display: inline-block; min-width: 42px; font-size: 12px; font-weight: 650; color: var(--muted); }
+    .source-note { margin: 16px 0 0; color: var(--muted); font-size: 13px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    [hidden] { display: none !important; }
+
+    @media (max-width: 680px) {
+      .page { width: min(100% - 18px, 1180px); margin-top: 12px; }
+      .panel { border-radius: 10px; padding: 12px; }
+      .metagraph-wrap { overflow-x: auto; }
+      .metagraph-wrap .canvas { position: relative; width: 760px; }
+      .diagram-frame { padding: 6px; }
+      th, td { padding: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <h1>HRA Knowledge Graph · Figure 2 Explorer</h1>
+      <p class="lede">Figure 2 shows five connected HRA KG subgraphs. Select any entity in the metagraph to open its corresponding LinkML / Mermaid ER diagram and a class-by-class data dictionary.</p>
+    </header>
+
+    <section class="panel" aria-labelledby="overview-title">
+      <div class="overview-head">
+        <div>
+          <h2 id="overview-title">HRA KG metagraph</h2>
+          <p class="hint">Select a colored entity node. Hover or keyboard focus reveals its interactive boundary.</p>
+        </div>
+        <a href="https://www.nature.com/articles/s41597-025-05183-6/figures/2" target="_blank" rel="noreferrer">Open full-size Figure 2 ↗</a>
+      </div>
+
+      <div class="metagraph-wrap">
+        <div class="canvas">
+          <img src="https://media.springernature.com/full/springer-static/image/art%3A10.1038%2Fs41597-025-05183-6/MediaObjects/41597_2025_5183_Fig2_HTML.png" width="1900" height="1071" alt="HRA KG metagraph showing five subgraphs and the relationships among their entities">
+
+          <button class="hotspot" style="left:24.5%;top:7.0%;width:14.0%;height:7.0%" data-key="ftu" aria-label="Open the 2d-ftu Mermaid diagram for FTU Illustration"><span class="sr-only">FTU Illustration</span></button>
+          <button class="hotspot" style="left:47.5%;top:7.0%;width:14.8%;height:7.0%" data-key="ftu-node" aria-label="Open the 2d-ftu Mermaid diagram for FTU Illustration Node"><span class="sr-only">FTU Illustration Node</span></button>
+          <button class="hotspot" style="left:65.1%;top:7.0%;width:13.4%;height:7.0%" data-key="antibody-panel" aria-label="Open the OMAP Mermaid diagram for Antibody Panel"><span class="sr-only">Antibody Panel</span></button>
+          <button class="hotspot" style="left:89.4%;top:7.0%;width:9.7%;height:7.0%" data-key="antibody" aria-label="Open the OMAP Mermaid diagram for Antibody"><span class="sr-only">Antibody</span></button>
+
+          <button class="hotspot" style="left:29.7%;top:28.7%;width:16.2%;height:7.3%" data-key="anatomy" aria-label="Open the ASCT+B Mermaid diagram for Anatomical Structure"><span class="sr-only">Anatomical Structure</span></button>
+          <button class="hotspot" style="left:56.4%;top:28.7%;width:9.3%;height:7.3%" data-key="cell-type" aria-label="Open the ASCT+B Mermaid diagram for Cell Type"><span class="sr-only">Cell Type</span></button>
+          <button class="hotspot" style="left:89.3%;top:28.7%;width:9.9%;height:7.3%" data-key="biomarker" aria-label="Open the ASCT+B Mermaid diagram for Biomarker"><span class="sr-only">Biomarker</span></button>
+
+          <button class="hotspot" style="left:2.8%;top:44.0%;width:15.8%;height:7.3%" data-key="organ-part" aria-label="Open the ref-organ Mermaid diagram for Reference Organ Part"><span class="sr-only">Reference Organ Part</span></button>
+          <button class="hotspot" style="left:4.3%;top:57.7%;width:12.4%;height:7.7%" data-key="organ" aria-label="Open the ref-organ Mermaid diagram for Reference Organ"><span class="sr-only">Reference Organ</span></button>
+          <button class="hotspot" style="left:1.4%;top:83.7%;width:9.6%;height:13.8%" data-key="landmark" aria-label="Open the Landmark Mermaid diagram"><span class="sr-only">Landmark</span></button>
+          <button class="hotspot" style="left:11.1%;top:83.7%;width:9.7%;height:13.8%" data-key="millitome" aria-label="Open the ref-organ Mermaid diagram for Millitome Extraction Site"><span class="sr-only">Millitome Extraction Site</span></button>
+
+          <button class="hotspot" style="left:35.8%;top:57.7%;width:21.0%;height:7.7%" data-key="extraction-site" aria-label="Open the spatial Mermaid diagram for Extraction Site"><span class="sr-only">Extraction Site</span></button>
+          <button class="hotspot" style="left:76.4%;top:57.7%;width:12.0%;height:7.7%" data-key="cell-summary" aria-label="Open the Cell Summary Mermaid diagram"><span class="sr-only">Cell Summary</span></button>
+          <button class="hotspot" style="left:64.0%;top:72.0%;width:6.0%;height:7.0%" data-key="donor" aria-label="Open the Donor Mermaid diagram"><span class="sr-only">Donor</span></button>
+          <button class="hotspot" style="left:79.0%;top:72.0%;width:9.0%;height:7.0%" data-key="dataset" aria-label="Open the Dataset Mermaid diagram"><span class="sr-only">Dataset</span></button>
+          <button class="hotspot" style="left:27.5%;top:87.0%;width:7.4%;height:7.1%" data-key="corridor" aria-label="Open the Corridor Mermaid diagram"><span class="sr-only">Corridor</span></button>
+          <button class="hotspot" style="left:40.3%;top:87.0%;width:12.9%;height:7.1%" data-key="collision" aria-label="Open the Collision Summary Mermaid diagram"><span class="sr-only">Collision Summary</span></button>
+          <button class="hotspot" style="left:58.4%;top:87.0%;width:14.2%;height:7.1%" data-key="tissue-block" aria-label="Open the Tissue Block Mermaid diagram"><span class="sr-only">Tissue Block</span></button>
+          <button class="hotspot" style="left:80.1%;top:87.0%;width:17.0%;height:7.1%" data-key="tissue-section" aria-label="Open the Tissue Section Mermaid diagram"><span class="sr-only">Tissue Section</span></button>
+        </div>
+      </div>
+
+      <div class="legend" aria-label="Figure 2 subgraph legend">
+        <span><i class="swatch" style="background:var(--green)"></i>2D Illustrations</span>
+        <span><i class="swatch" style="background:var(--orange)"></i>3D Spatial Reference</span>
+        <span><i class="swatch" style="background:var(--coral)"></i>Biological Structure</span>
+        <span><i class="swatch" style="background:var(--purple)"></i>Experimental Data</span>
+        <span><i class="swatch" style="background:var(--cyan)"></i>Experiment Settings</span>
+      </div>
+    </section>
+
+    <section id="detail" class="panel detail" aria-live="polite">
+      <div id="placeholder" class="placeholder">Select an entity above to view its Mermaid ER diagram and data dictionary.</div>
+      <div id="detail-content" hidden>
+        <div class="detail-head">
+          <div>
+            <p id="selection-kicker" class="selection-kicker"></p>
+            <h2 id="selection-title" class="selection-title"></h2>
+          </div>
+          <span id="schema-tag" class="tag"></span>
+        </div>
+
+        <div class="diagram-frame">
+          <img id="diagram" alt="">
+        </div>
+
+        <section class="dictionary" aria-labelledby="dictionary-title">
+          <div class="dictionary-bar">
+            <div>
+              <h2 id="dictionary-title">Data dictionary</h2>
+              <p id="dictionary-note" class="hint">Each object is shown as a separate table with its own fields and relationships.</p>
+            </div>
+          </div>
+          <div id="dictionary-groups"></div>
+        </section>
+        <p class="source-note">ER diagrams and fields come from the paper-era <a id="schema-source" href="#" target="_blank" rel="noreferrer">hra-do-processor LinkML schema snapshot</a>. Relationship cardinality follows Mermaid ER notation.</p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const COMMIT = 'e95779d';
+    const rawBase = `https://raw.githubusercontent.com/hubmapconsortium/hra-do-processor/${COMMIT}/docs/er-diagrams/`;
+    const repoBase = `https://github.com/hubmapconsortium/hra-do-processor/blob/${COMMIT}/schemas/src/`;
+
+    const dictionaries = {
+      '2d-ftu': {
+        FtuIllustration: { fields: [['uriorcurie','id'],['string','label']], relations: [['located_in','AnatomicalStructureID','||--|o'],['image_file','FtuIllustrationFile','||--}o'],['illustration_node','FtuIllustrationNode','||--}o'],['representation_of','Named','||--|o'],['type_of','Named','||--}o']] },
+        FtuIllustrationNode: { fields: [['string','node_name'],['string','node_group'],['string','part_of_illustration'],['uriorcurie','id'],['string','label']], relations: [['representation_of','Named','||--|o'],['type_of','Named','||--}o']] }
+      },
+      'asct-b': {
+        AnatomicalStructure: { fields: [['uriorcurie','id'],['string','label'],['string','conforms_to'],['uriorcurie','parent_class'],['string','ccf_pref_label'],['string','ccf_asctb_type'],['boolean','ccf_is_provisional']], relations: [['ccf_part_of','AnatomicalStructure','||--}o']] },
+        CellType: { fields: [['uriorcurie','id'],['string','label'],['string','conforms_to'],['uriorcurie','parent_class'],['string','ccf_pref_label'],['string','ccf_asctb_type'],['boolean','ccf_is_provisional']], relations: [['ccf_ct_isa','CellType','||--}o'],['ccf_located_in','AnatomicalStructure','||--}o'],['has_characterizing_marker_set','CharacterizingMarkerSet','||--}o']] },
+        Biomarker: { fields: [['string','ccf_biomarker_type'],['uriorcurie','id'],['string','label'],['string','conforms_to'],['uriorcurie','parent_class'],['string','ccf_pref_label'],['string','ccf_asctb_type'],['boolean','ccf_is_provisional']], relations: [] }
+      },
+      omap: {
+        AntibodyPanel: { fields: [['uriorcurie','id'],['string','label']], relations: [['contains_antibodies','ExperimentUsedAntibody','||--}|'],['type_of','Named','||--}o']] },
+        Antibody: { fields: [['uriorcurie','id'],['uriorcurie','parent_class'],['string','antibody_type'],['string','host'],['string','isotype'],['string','clonality'],['string','clone_id'],['string','conjugate'],['string','fluorescent'],['string','recombinant'],['string','producer'],['string','catalog_number']], relations: [['detects','DetectStatement','||--}o'],['binds_to','BindsToStatement','||--}o']] }
+      },
+      'ref-organ': {
+        SpatialEntity: { fields: [['string','pref_label'],['date','create_date'],['decimal','x_dimension'],['decimal','y_dimension'],['decimal','z_dimension'],['string','dimension_unit'],['string','organ_owner_sex'],['string','organ_side'],['integer','rui_rank'],['uriorcurie','id'],['string','label']], relations: [['creators','Creator','||--}o'],['representation_of','AnatomicalStructure','||--|o'],['object_reference','SpatialObjectReference','||--|o'],['placements','SpatialPlacement','||--}o'],['reference_organ','SpatialEntity','||--|o'],['extraction_set','ExtractionSet','||--|o'],['type_of','Named','||--}o']] },
+        ExtractionSet: { fields: [['integer','rui_rank'],['uriorcurie','id'],['string','label']], relations: [['extraction_set_for','SpatialEntity','||--||'],['type_of','Named','||--}o']] }
+      },
+      landmark: {
+        SpatialEntity: { fields: [['string','pref_label'],['decimal','x_dimension'],['decimal','y_dimension'],['decimal','z_dimension'],['string','dimension_unit'],['integer','rui_rank'],['uriorcurie','id'],['string','label']], relations: [['creators','Creator','||--}o'],['object_reference','SpatialObjectReference','||--|o'],['placements','SpatialPlacement','||--}o'],['extraction_set','ExtractionSet','||--||'],['type_of','Named','||--}o']] }
+      },
+      spatial: {
+        SpatialEntity: { fields: [['string','pref_label'],['string','creator_first_name'],['string','creator_last_name'],['string','creator_name'],['date','create_date'],['decimal','x_dimension'],['decimal','y_dimension'],['decimal','z_dimension'],['string','dimension_unit'],['integer','slice_count'],['decimal','slice_thickness'],['uriorcurie','id'],['string','label']], relations: [['collides_with','EntityID','||--}o'],['all_collisions','CollisionSummary','||--}o'],['corridor','Corridor','||--|o'],['summaries','CellSummary','||--}o'],['type_of','Named','||--}o']] },
+      },
+      'cell-summary': {
+        CellSummary: { fields: [['string','annotation_method'],['decimal','aggregated_summary_count'],['string','modality'],['string','sex']], relations: [['aggregated_summaries','EntityID','||--}o'],['summary','CellSummaryRow','||--}|'],['type_of','Named','||--}o']] }
+      },
+      donor: {
+        Donor: { fields: [['string','pref_label'],['string','description'],['string','link'],['decimal','age'],['decimal','bmi'],['string','sex'],['string','race'],['string','consortium_name'],['string','provider_name'],['string','provider_uuid'],['uriorcurie','id'],['string','label']], relations: [['sex_id','Named','||--|o'],['race_id','Named','||--|o'],['type_of','Named','||--}o']] }
+      },
+      dataset: {
+        Dataset: { fields: [['string','pref_label'],['string','description'],['string','link'],['string','technology'],['integer','cell_count'],['integer','gene_count'],['string','thumbnail'],['uriorcurie','publication'],['string','publication_title'],['string','publication_lead_author'],['stringList','references'],['uriorcurie','id'],['string','label']], relations: [['organ_id','EntityID','||--|o'],['summaries','CellSummary','||--}o'],['type_of','Named','||--}o']] }
+      },
+      corridor: { Corridor: { fields: [['string','file_format'],['string','file']], relations: [['type_of','Named','||--}o']] } },
+      collision: { CollisionSummary: { fields: [['string','collision_method']], relations: [['collisions','CollisionItem','||--}o'],['type_of','Named','||--}o']] } },
+      sample: {
+        TissueBlock: { fields: [['string','pref_label'],['string','description'],['SampleTypeEnum','sample_type'],['string','link'],['integer','section_count'],['decimal','section_size'],['string','section_units'],['uriorcurie','id'],['string','label']], relations: [['rui_location','EntityID','||--|o'],['sections','TissueSection','||--}o'],['datasets','EntityID','||--}o'],['donor','EntityID','||--||'],['type_of','Named','||--}o']] },
+        TissueSection: { fields: [['string','pref_label'],['string','description'],['SampleTypeEnum','sample_type'],['string','link'],['integer','section_number'],['uriorcurie','id'],['string','label']], relations: [['datasets','EntityID','||--}o'],['type_of','Named','||--}o']] }
+      }
+    };
+
+    const items = {
+      ftu: { label:'FTU Illustration', group:'2D Illustrations', schema:'2d-ftu', diagram:1, entity:'FtuIllustration' },
+      'ftu-node': { label:'FTU Illustration Node', group:'2D Illustrations', schema:'2d-ftu', diagram:1, entity:'FtuIllustrationNode' },
+      'antibody-panel': { label:'Antibody Panel', group:'Experiment Settings', schema:'omap', diagram:14, entity:'AntibodyPanel' },
+      antibody: { label:'Antibody', group:'Experiment Settings', schema:'omap', diagram:14, entity:'Antibody' },
+      anatomy: { label:'Anatomical Structure', group:'Biological Structure', schema:'asct-b', diagram:2, entity:'AnatomicalStructure' },
+      'cell-type': { label:'Cell Type', group:'Biological Structure', schema:'asct-b', diagram:2, entity:'CellType' },
+      biomarker: { label:'Biomarker', group:'Biological Structure', schema:'asct-b', diagram:2, entity:'Biomarker' },
+      'organ-part': { label:'Reference Organ Part', group:'3D Spatial Reference', schema:'ref-organ', diagram:15, entity:'SpatialEntity' },
+      organ: { label:'Reference Organ', group:'3D Spatial Reference', schema:'ref-organ', diagram:15, entity:'SpatialEntity' },
+      landmark: { label:'Landmark', group:'3D Spatial Reference', schema:'landmark', diagram:13, entity:'SpatialEntity' },
+      millitome: { label:'Millitome Extraction Site', group:'3D Spatial Reference', schema:'ref-organ', diagram:15, entity:'ExtractionSet' },
+      'extraction-site': { label:'Extraction Site (Spatial Entity)', group:'Experimental Data', schema:'spatial', diagram:17, entity:'SpatialEntity' },
+      'cell-summary': { label:'Cell Summary', group:'Experimental Data', schema:'cell-summary', diagram:4, entity:'CellSummary' },
+      donor: { label:'Donor', group:'Experimental Data', schema:'donor', diagram:10, entity:'Donor' },
+      dataset: { label:'Dataset', group:'Experimental Data', schema:'dataset', diagram:9, entity:'Dataset' },
+      corridor: { label:'Corridor', group:'Experimental Data', schema:'corridor', diagram:7, entity:'Corridor' },
+      collision: { label:'Collision Summary', group:'Experimental Data', schema:'collision', diagram:6, entity:'CollisionSummary' },
+      'tissue-block': { label:'Tissue Block (Sample)', group:'Experimental Data', schema:'sample', diagram:16, entity:'TissueBlock' },
+      'tissue-section': { label:'Tissue Section (Sample)', group:'Experimental Data', schema:'sample', diagram:16, entity:'TissueSection' }
+    };
+
+    const mermaidSourceUrl = `https://raw.githubusercontent.com/hubmapconsortium/hra-do-processor/${COMMIT}/er-diagrams.md`;
+    const descriptions = {
+      id:'Persistent URI or CURIE identifier for the object.',
+      iri:'IRI of the digital object container.',
+      label:'Human-readable display label.',
+      title:'Title assigned to the digital object or dataset.',
+      pref_label:'Normalized preferred label.',
+      description:'Free-text description of the object.',
+      creation_date:'Date on which the digital object was created.',
+      create_date:'Date on which the spatial object was created.',
+      version:'Version identifier for the digital object.',
+      license:'License governing reuse of the digital object.',
+      publisher:'Organization or person responsible for publication.',
+      created_by:'Person or organization that created the object.',
+      derived_from:'Source object from which this object was derived.',
+      see_also:'Related resource that provides additional context.',
+      metadata:'Metadata record describing the digital object.',
+      data:'Primary data payload stored in the container.',
+      record_number:'Row or record number in the source data.',
+      order_number:'Position of an item within an ordered source record.',
+      source_concept:'Normalized concept from which the record value was created.',
+      type_of:'Semantic type assigned to the object.',
+      parent_class:'Identifier of the parent class.',
+      conforms_to:'External concept or specification that this value conforms to.',
+      representation_of:'Biological entity represented by this digital object.',
+      located_in:'Anatomical structure in which the object is located.',
+      ccf_part_of:'Partonomy relationship to a parent anatomical structure.',
+      ccf_ct_isa:'Cell-type is-a relationship to a parent cell type.',
+      ccf_located_in:'Anatomical structure in which the cell type is located.',
+      has_characterizing_marker_set:'Marker set used to characterize the cell type.',
+      ccf_biomarker_type:'Biomarker category, such as gene or protein.',
+      ccf_pref_label:'Preferred label aligned to the CCF vocabulary.',
+      ccf_asctb_type:'ASCT+B concept category.',
+      ccf_is_provisional:'Indicates whether the concept is provisional rather than established in an external ontology.',
+      primary_cell_type:'Primary cell type described by the marker record.',
+      primary_anatomical_structure:'Primary anatomical structure described by the marker record.',
+      biomarker_set:'Biomarkers associated with the cell marker descriptor.',
+      source_record:'Source ASCT+B record from which the object was derived.',
+      image_file:'Image file associated with the 2D illustration.',
+      illustration_node:'Node contained in the FTU illustration.',
+      node_name:'Name assigned to an illustration node.',
+      node_group:'Group assigned to an illustration node.',
+      part_of_illustration:'FTU illustration that contains this node.',
+      contains_antibodies:'Experimental antibodies included in the panel.',
+      detects:'Protein-detection statement asserted for the antibody.',
+      binds_to:'Binding-target statement asserted for the antibody.',
+      organ_owner_sex:'Biological sex represented by the reference organ.',
+      organ_side:'Laterality of the reference organ.',
+      x_dimension:'Extent of the object along the X axis.',
+      y_dimension:'Extent of the object along the Y axis.',
+      z_dimension:'Extent of the object along the Z axis.',
+      dimension_unit:'Measurement unit used for spatial dimensions.',
+      placements:'Spatial placements of the object in the CCF.',
+      reference_organ:'Reference organ used as the placement target.',
+      extraction_set:'Extraction set to which the object belongs.',
+      extraction_set_for:'Spatial entity represented by the extraction set.',
+      rui_rank:'Ordering value used by the Registration User Interface.',
+      collides_with:'Objects that geometrically intersect the spatial entity.',
+      all_collisions:'Complete set of computed anatomical-structure collisions.',
+      corridor:'Candidate spatial corridor associated with the extraction site.',
+      summaries:'Cell summaries associated with the object.',
+      annotation_method:'Method used to assign cell annotations.',
+      aggregated_summary_count:'Number of summaries combined into this result.',
+      modality:'Experimental modality represented by the summary.',
+      summary:'Per-cell-type summary rows.',
+      age:'Age recorded for the donor.',
+      bmi:'Body mass index recorded for the donor.',
+      race:'Race value reported for the donor.',
+      consortium_name:'Consortium responsible for the data.',
+      provider_name:'Name of the tissue provider.',
+      provider_uuid:'Identifier assigned to the tissue provider.',
+      technology:'Experimental technology used to generate the dataset.',
+      cell_count:'Number of cells in the dataset.',
+      gene_count:'Number of genes in the dataset.',
+      publication:'Identifier of an associated publication.',
+      references:'References supporting or describing the object.',
+      file:'Location of the associated data file.',
+      file_format:'Format of the associated file.',
+      collision_method:'Method used to compute anatomical-structure collisions.',
+      collisions:'Individual anatomical-structure collision records.',
+      sample_type:'Controlled sample-type value.',
+      section_count:'Number of sections produced from a tissue block.',
+      section_size:'Physical size of each tissue section.',
+      section_units:'Measurement unit used for section size.',
+      section_number:'Sequence number assigned to a tissue section.',
+      rui_location:'Spatial registration location created with the RUI.',
+      sections:'Tissue sections subdivided from a tissue block.',
+      datasets:'Datasets generated by or associated with the sample.',
+      donor:'Donor who provided the sample.',
+      link:'Link back to the source data portal.'
+    };
+
+    const cardinality = {
+      '||--||':'exactly 1 (required)',
+      '||--|o':'0..1 (optional)',
+      '||--}o':'0..* (multiple)',
+      '||--}|':'1..* (one or more)'
+    };
+
+    const detail = document.getElementById('detail');
+    const placeholder = document.getElementById('placeholder');
+    const content = document.getElementById('detail-content');
+    const dictionaryGroups = document.getElementById('dictionary-groups');
+    let dictionaryRequest = 0;
+    let mermaidDocumentPromise;
+
+    function humanize(value) {
+      return value
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, letter => letter.toUpperCase());
+    }
+
+    function describeAttribute(field, type, objectName) {
+      if (descriptions[field]) return descriptions[field];
+      if (field.endsWith('_id')) return `Identifier used for the ${humanize(field.slice(0, -3)).toLowerCase()} value.`;
+      if (field.endsWith('_date') || field.includes('creation_date') || field.includes('create_date')) return `Date associated with ${humanize(field).toLowerCase()}.`;
+      if (field.endsWith('_count')) return `Number of ${humanize(field.slice(0, -6)).toLowerCase()} records.`;
+      if (field.endsWith('_number')) return `Sequence or record number used for ${humanize(field.replace(/_number$/, '')).toLowerCase()}.`;
+      if (field.endsWith('_unit') || field.endsWith('_units')) return `Measurement unit used for ${humanize(field.replace(/_units?$/, '')).toLowerCase()}.`;
+      if (field.endsWith('_url')) return `URL for the associated ${humanize(field.replace(/_url$/, '')).toLowerCase()} resource.`;
+      if (field.endsWith('_label')) return `Human-readable label for ${humanize(field.replace(/_label$/, '')).toLowerCase()}.`;
+      if (field.endsWith('_name')) return `Name recorded for ${humanize(field.replace(/_name$/, '')).toLowerCase()}.`;
+      if (field.endsWith('_type')) return `Category assigned to ${humanize(field.replace(/_type$/, '')).toLowerCase()}.`;
+      if (field.endsWith('_format')) return `File or serialization format used for ${humanize(field.replace(/_format$/, '')).toLowerCase()}.`;
+      if (field.startsWith('is_')) return `Boolean indicator for whether ${humanize(field.slice(3)).toLowerCase()} applies.`;
+      return `${humanize(field)} value stored on each ${humanize(objectName)} object (${type}).`;
+    }
+
+    function parseSchemaDictionary(markdown, schema) {
+      const header = `## ${schema}`;
+      const headerStart = markdown.indexOf(header);
+      if (headerStart < 0) throw new Error(`Schema section not found: ${schema}`);
+      const bodyStart = markdown.indexOf('\n', headerStart) + 1;
+      const nextHeader = markdown.indexOf('\n## ', bodyStart);
+      const section = markdown.slice(bodyStart, nextHeader < 0 ? markdown.length : nextHeader);
+      const objects = new Map();
+      const classPattern = /^([A-Za-z]\w*)\s*\{\s*\n([\s\S]*?)^\}/gm;
+      let classMatch;
+      while ((classMatch = classPattern.exec(section))) {
+        const fields = classMatch[2].split('\n').map(line => line.trim()).filter(Boolean).map(line => {
+          const [type, field] = line.split(/\s+/);
+          return { type, field };
+        }).filter(field => field.type && field.field);
+        objects.set(classMatch[1], { name:classMatch[1], fields, relations:[] });
+      }
+      const relationPattern = /^(\w+)\s+([|o}{-]+)\s+(\w+)\s+:\s+"([^"]+)"/gm;
+      let relationMatch;
+      while ((relationMatch = relationPattern.exec(section))) {
+        const [, from, card, to, field] = relationMatch;
+        if (!objects.has(from)) objects.set(from, { name:from, fields:[], relations:[] });
+        objects.get(from).relations.push({ field, target:to, card });
+      }
+      return [...objects.values()];
+    }
+
+    async function getSchemaDictionary(schema) {
+      mermaidDocumentPromise ||= fetch(mermaidSourceUrl).then(response => {
+        if (!response.ok) throw new Error(`Unable to load schema definitions (${response.status})`);
+        return response.text();
+      });
+      return parseSchemaDictionary(await mermaidDocumentPromise, schema);
+    }
+
+    function tableForObject(object, selectedEntity) {
+      const rows = [
+        ...object.fields.map(({ type, field }) => ({ kind:'Attribute', field, target:type, card:'—', description:describeAttribute(field, type, object.name) })),
+        ...object.relations.map(({ field, target, card }) => ({ kind:'Relationship', field, target, card:cardinality[card] || card, description:descriptions[field] || `Links this ${humanize(object.name)} object to ${humanize(target)}.` }))
+      ];
+      const selected = object.name === selectedEntity ? '<span class="tag">Selected Figure 2 entity</span>' : '';
+      const body = rows.length ? rows.map(row => `
+        <tr>
+          <td><span class="kind">${row.kind}</span></td>
+          <td><code>${row.field}</code></td>
+          <td><code>${row.target}</code></td>
+          <td>${row.card}</td>
+          <td>${row.description}</td>
+        </tr>`).join('') : '<tr><td colspan="5">This object defines no direct attributes or outgoing relationships.</td></tr>';
+      return `
+        <section class="dictionary-group" id="object-${object.name}">
+          <h3>${object.name} ${selected}</h3>
+          <p class="object-summary">${object.fields.length} attributes · ${object.relations.length} outgoing relationships</p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Kind</th><th>Field / relationship</th><th>Data type / target object</th><th>Cardinality</th><th>Meaning</th></tr></thead>
+              <tbody>${body}</tbody>
+            </table>
+          </div>
+        </section>`;
+    }
+
+    async function renderDictionary(schema, selectedEntity) {
+      const request = ++dictionaryRequest;
+      dictionaryGroups.innerHTML = '<p class="hint">Loading object definitions…</p>';
+      try {
+        const objects = await getSchemaDictionary(schema);
+        if (request !== dictionaryRequest) return;
+        const orderedObjects = [...objects].sort((a, b) => Number(b.name === selectedEntity) - Number(a.name === selectedEntity));
+        dictionaryGroups.innerHTML = orderedObjects.map(object => tableForObject(object, selectedEntity)).join('');
+        document.getElementById('dictionary-note').textContent = `${objects.length} objects in the ${schema} schema. Each object has its own table.`;
+      } catch (error) {
+        if (request !== dictionaryRequest) return;
+        const fallback = dictionaries[schema] || {};
+        const objects = Object.entries(fallback).map(([name, value]) => ({
+          name,
+          fields:value.fields.map(([type, field]) => ({ type, field })),
+          relations:value.relations.map(([field, target, card]) => ({ field, target, card }))
+        }));
+        dictionaryGroups.innerHTML = objects.length ? objects.map(object => tableForObject(object, selectedEntity)).join('') : `<p class="hint">The data dictionary could not be loaded: ${error.message}</p>`;
+        document.getElementById('dictionary-note').textContent = objects.length ? 'Showing the embedded fallback dictionary.' : 'Dictionary unavailable.';
+      }
+    }
+
+    function openItem(key, shouldScroll = true) {
+      const item = items[key];
+      document.querySelectorAll('.hotspot').forEach(button => button.classList.toggle('is-active', button.dataset.key === key));
+      placeholder.hidden = true;
+      content.hidden = false;
+      document.getElementById('selection-kicker').textContent = item.group;
+      document.getElementById('selection-title').textContent = item.label;
+      document.getElementById('schema-tag').textContent = `schema: ${item.schema}`;
+      const image = document.getElementById('diagram');
+      image.src = `${rawBase}index-${item.diagram}.svg`;
+      image.alt = `Mermaid ER diagram for the ${item.schema} schema`;
+      document.getElementById('schema-source').href = `${repoBase}${item.schema === 'cell-summary' || item.schema === 'collision' || item.schema === 'corridor' || item.schema === 'dataset' || item.schema === 'donor' || item.schema === 'sample' || item.schema === 'spatial' ? 'modules/' : 'digital-objects/'}${item.schema}.yaml`;
+
+      renderDictionary(item.schema, item.entity);
+      if (shouldScroll) detail.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'start' });
+      history.replaceState(null, '', `#${key}`);
+    }
+
+    document.querySelectorAll('.hotspot').forEach(button => button.addEventListener('click', () => openItem(button.dataset.key)));
+
+    const initialKey = location.hash.slice(1);
+    if (items[initialKey]) openItem(initialKey, false);
+    window.addEventListener('hashchange', () => {
+      const key = location.hash.slice(1);
+      if (items[key]) openItem(key, false);
+    });
+  </script>
+</body>
+</html>
